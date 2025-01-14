@@ -33,30 +33,36 @@ class TwitterApp:
         self.schedule_entry = tk.Entry(root)
         self.schedule_entry.grid(row=5, column=1, padx=10, pady=10)
 
-        self.start_button = tk.Button(root, text="Start the program", command="")
+        self.start_button = tk.Button(root, text="Start the program", command=self.start)
         self.start_button.grid(row=6, columnspan=2, padx=10)
         
     def authenticate(self):
         consumer_key = self.consumer_key_entry.get()
-        constumer_secret = self.consumer_key_entry_secret.get
-        
+        constumer_secret = self.consumer_key_entry_secret.get()
+
         if not consumer_key or not constumer_secret:
             messagebox.showerror("Error", "Please put the api keys")
             return
         
         self.Xapi = X_API(consumer_key, constumer_secret)
         self.Xapi.authorize()
-        
+
         user_info = self.Xapi.get_user_info()
-        
+
         if user_info:
             self.user_info_label.config(
                 text=f"Name: {user_info['name']}\n Username: {user_info['username']} \n Description: {user_info['description']}"
             )
         else:
-            messagebox.showerror("Error","Failed to authenticate")
+            messagebox.showerror("Error", "Failed to authenticate")
             
+    def start(self):
+        interval = self.schedule_entry.get()
         
+        self.schedule_entry.get()  
+        if not interval.isdigit():
+            messagebox.showerror("Error","Please put number of interval in seconds")
+          
         
         
 if __name__ == "__main__":
