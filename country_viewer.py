@@ -1,179 +1,134 @@
 import customtkinter as ctk
-import requests
 from tkinter import messagebox
+import requests
 from PIL import Image, ImageTk
 from io import BytesIO
 
-# Your Exchange Rates API key
-EXCHANGE_API_KEY = "your_api_key_here"
 
-class CountryInfoApp:
+class CountryDashboardApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Country Information Viewer")
-        self.root.geometry("800x650")
-        ctk.set_appearance_mode("System")
+        self.root.title("Country Information Dashboard")
+        self.root.geometry("800x600")
+        ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
 
-        # Main Frame for Clean Layout
-        self.main_frame = ctk.CTkFrame(root)
-        self.main_frame.pack(fill="both", expand=True, padx=20, pady=20)
+        # Frame Layout
+        self.frame = ctk.CTkFrame(root, corner_radius=10)
+        self.frame.pack(pady=20, padx=20, fill="both", expand=True)
 
-        # Title Label
-        self.title_label = ctk.CTkLabel(self.main_frame, text="Country Information Viewer", font=("Arial", 24, "bold"), text_color="blue")
-        self.title_label.grid(row=0, column=0, columnspan=3, pady=(20, 10))
+        # Title
+        self.title_label = ctk.CTkLabel(self.frame, text="Country Information Viewer", font=("Helvetica", 24, "bold"))
+        self.title_label.pack(pady=20)
 
-        # Country Dropdown
-        self.country_label = ctk.CTkLabel(self.main_frame, text="Select Country:", font=("Arial", 14))
-        self.country_label.grid(row=1, column=0, sticky="w", padx=10)
+        # Country Selection
+        self.country_frame = ctk.CTkFrame(self.frame)
+        self.country_frame.pack(pady=10, fill="x", padx=20)
 
-        self.country_dropdown = ctk.CTkComboBox(self.main_frame, width=300, values=[], command=self.on_country_select)
-        self.country_dropdown.grid(row=1, column=1, columnspan=2, pady=10)
+        self.country_label = ctk.CTkLabel(self.country_frame, text="Select Country:", font=("Helvetica", 16))
+        self.country_label.pack(side="left", padx=10)
 
-        # Fetch Country Data Button
-        self.fetch_button = ctk.CTkButton(self.main_frame, text="Fetch Country Info", command=self.fetch_country_info, width=150)
-        self.fetch_button.grid(row=2, column=0, columnspan=3, pady=10)
+        self.country_entry = ctk.CTkComboBox(self.country_frame, width=300, font=("Helvetica", 14))
+        self.country_entry.pack(side="left", padx=10)
+        self.country_entry.set("united arab emirates")  # Default value
 
-        # Flag Display Section
-        self.flag_label = ctk.CTkLabel(self.main_frame, text="Flag will appear here", font=("Arial", 12), text_color="gray")
-        self.flag_label.grid(row=3, column=0, columnspan=3, pady=15)
+        self.fetch_button = ctk.CTkButton(self.country_frame, text="Fetch Country Info", command=self.fetch_country_info)
+        self.fetch_button.pack(side="left", padx=10)
 
-        # Country Info Labels
-        self.info_label = ctk.CTkLabel(self.main_frame, text="Country Info will be displayed here.", font=("Arial", 14))
-        self.info_label.grid(row=4, column=0, columnspan=3, pady=10)
+        # Country Flag
+        self.flag_label = ctk.CTkLabel(self.frame, text="", width=300, height=200, corner_radius=10)
+        self.flag_label.pack(pady=20)
 
-        # Additional Information
-        self.languages_label = ctk.CTkLabel(self.main_frame, text="Languages Spoken:", font=("Arial", 12))
-        self.languages_label.grid(row=5, column=0, sticky="w", padx=10)
+        # Info Section
+        self.info_frame = ctk.CTkFrame(self.frame)
+        self.info_frame.pack(pady=10, fill="x", padx=20)
 
-        self.languages_info = ctk.CTkLabel(self.main_frame, text="", font=("Arial", 12), text_color="gray")
-        self.languages_info.grid(row=5, column=1, columnspan=2, pady=5)
+        self.info_label = ctk.CTkLabel(self.info_frame, text="", font=("Helvetica", 14), justify="left")
+        self.info_label.pack(padx=20, pady=10)
 
-        self.population_label = ctk.CTkLabel(self.main_frame, text="Population:", font=("Arial", 12))
-        self.population_label.grid(row=6, column=0, sticky="w", padx=10)
+        # Currency Conversion
+        self.currency_frame = ctk.CTkFrame(self.frame)
+        self.currency_frame.pack(pady=20, fill="x", padx=20)
 
-        self.population_info = ctk.CTkLabel(self.main_frame, text="", font=("Arial", 12), text_color="gray")
-        self.population_info.grid(row=6, column=1, columnspan=2, pady=5)
+        self.currency_label = ctk.CTkLabel(self.currency_frame, text="Currency Conversion:", font=("Helvetica", 16))
+        self.currency_label.pack(side="left", padx=10)
 
-        self.region_label = ctk.CTkLabel(self.main_frame, text="Region & Subregion:", font=("Arial", 12))
-        self.region_label.grid(row=7, column=0, sticky="w", padx=10)
+        self.currency_entry = ctk.CTkEntry(self.currency_frame, width=200, placeholder_text="Enter amount")
+        self.currency_entry.pack(side="left", padx=10)
 
-        self.region_info = ctk.CTkLabel(self.main_frame, text="", font=("Arial", 12), text_color="gray")
-        self.region_info.grid(row=7, column=1, columnspan=2, pady=5)
+        self.convert_button = ctk.CTkButton(self.currency_frame, text="Convert to USD", command=self.convert_currency)
+        self.convert_button.pack(side="left", padx=10)
 
-        # Currency Conversion Section
-        self.currency_label = ctk.CTkLabel(self.main_frame, text="Currency Conversion:", font=("Arial", 12))
-        self.currency_label.grid(row=8, column=0, sticky="w", padx=10)
-
-        self.currency_entry = ctk.CTkEntry(self.main_frame, width=250, placeholder_text="Amount in local currency", font=("Arial", 12))
-        self.currency_entry.grid(row=8, column=1, pady=10)
-
-        self.convert_button = ctk.CTkButton(self.main_frame, text="Convert to USD", command=self.convert_currency, width=150)
-        self.convert_button.grid(row=8, column=2, pady=10)
-
-        # Populate country dropdown
-        self.fetch_countries()
-
-    def fetch_countries(self):
-        """Fetch country data and populate the dropdown."""
-        try:
-            response = requests.get("https://restcountries.com/v3.1/all")
-            response.raise_for_status()
-            countries = response.json()
-
-            country_names = [country.get("name", {}).get("common", "Unknown") for country in countries]
-            self.country_dropdown.configure(values=country_names)
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to fetch countries: {e}")
-
-    def on_country_select(self, selected_country):
-        """Reset information when a new country is selected."""
-        self.info_label.configure(text="")
-        self.flag_label.configure(image=None, text="Flag will appear here.")
-        self.languages_info.configure(text="")
-        self.population_info.configure(text="")
-        self.region_info.configure(text="")
+        self.currency_result_label = ctk.CTkLabel(self.frame, text="", font=("Helvetica", 16, "bold"), text_color="green")
+        self.currency_result_label.pack(pady=10)
 
     def fetch_country_info(self):
-        """Fetch and display country information."""
-        selected_country = self.country_dropdown.get()
+        country_name = self.country_entry.get().strip()
+        if not country_name:
+            messagebox.showerror("Error", "Please enter a country name!")
+            return
 
+        # Fetch country data
         try:
-            # Fetch country data
-            url = f"https://restcountries.com/v3.1/name/{selected_country}?fullText=true"
-            response = requests.get(url)
+            response = requests.get(f"https://restcountries.com/v3.1/name/{country_name}")
             response.raise_for_status()
             country_data = response.json()[0]
 
-            country_name = country_data["name"]["common"]
-            capital = country_data.get("capital", ["Unknown"])[0]
-            region = country_data.get("region", "Unknown")
-            subregion = country_data.get("subregion", "Unknown")
-            population = country_data.get("population", "Unknown")
-            languages = ", ".join(country_data.get("languages", {}).values())
-
-            # Display the country information
-            self.info_label.configure(text=f"Name: {country_name}\nCapital: {capital}")
-            self.languages_info.configure(text=f"Languages: {languages}")
-            self.population_info.configure(text=f"Population: {population:,}")
-            self.region_info.configure(text=f"Region: {region}, Subregion: {subregion}")
-
-            # Display the flag
+            # Update flag
             flag_url = country_data["flags"]["png"]
-            self.display_flag(flag_url)
-
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to fetch country data: {e}")
-
-    # Display the flag
-    def display_flag(self, flag_url):
-        """Display the flag of the country."""
-        try:
-            response = requests.get(flag_url)
-            response.raise_for_status()
-            flag_image = Image.open(BytesIO(response.content))
-            flag_image = flag_image.resize((300, 200), Image.Resampling.LANCZOS)  # Use LANCZOS instead of ANTIALIAS
+            flag_response = requests.get(flag_url)
+            flag_image = Image.open(BytesIO(flag_response.content))
+            flag_image = flag_image.resize((300, 200), Image.Resampling.LANCZOS)
             flag_photo = ImageTk.PhotoImage(flag_image)
-
             self.flag_label.configure(image=flag_photo, text="")
-            self.flag_label.image = flag_photo  # Keep reference to avoid garbage collection
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to load flag image: {e}")
+            self.flag_label.image = flag_photo
 
+            # Update info
+            country_info = f"""
+            Name: {country_data['name']['common']}
+            Capital: {country_data.get('capital', ['N/A'])[0]}
+            Languages: {', '.join(country_data['languages'].values())}
+            Population: {country_data['population']:,}
+            Region: {country_data['region']}, Subregion: {country_data.get('subregion', 'N/A')}
+            Currency: {list(country_data['currencies'].keys())[0]}
+            """
+            self.info_label.configure(text=country_info)
+
+            # Store currency code
+            self.currency_code = list(country_data['currencies'].keys())[0]
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to fetch country information: {e}")
 
     def convert_currency(self):
-        """Convert the selected country's currency to USD."""
-        selected_country = self.country_dropdown.get()
+        amount = self.currency_entry.get().strip()
+        if not amount.isdigit():
+            self.currency_result_label.configure(text="Invalid amount! Please enter a number.", text_color="red")
+            return
+
+        amount = float(amount)
+        if not hasattr(self, "currency_code"):
+            self.currency_result_label.configure(text="Fetch country info first!", text_color="red")
+            return
 
         try:
-            # Fetch country data
-            url = f"https://restcountries.com/v3.1/name/{selected_country}?fullText=true"
-            response = requests.get(url)
+            # Fetch exchange rate
+            api_key = "your_exchange_rate_api_key"
+            response = requests.get(f"https://open.er-api.com/v6/latest/{self.currency_code}?apikey={api_key}")
             response.raise_for_status()
-            country_data = response.json()[0]
+            exchange_data = response.json()
 
-            country_currency = list(country_data.get("currencies", {}).keys())[0]
-            amount = float(self.currency_entry.get())
-
-            # Fetch exchange rates from the API
-            exchange_url = f"https://open.er-api.com/v6/latest/{country_currency}"
-            exchange_response = requests.get(exchange_url, headers={"apikey": EXCHANGE_API_KEY})
-            exchange_response.raise_for_status()
-            exchange_data = exchange_response.json()
-
-            # Convert to USD
-            if "rates" in exchange_data and "USD" in exchange_data["rates"]:
-                exchange_rate = exchange_data["rates"]["USD"]
-                converted_amount = amount * exchange_rate
-                messagebox.showinfo("Currency Conversion", f"{amount} {country_currency} = {converted_amount:.2f} USD")
-            else:
-                messagebox.showerror("Error", "Exchange rate not found.")
-
+            # Calculate conversion
+            usd_rate = exchange_data["rates"]["USD"]
+            converted_amount = amount * usd_rate
+            self.currency_result_label.configure(
+                text=f"{amount} {self.currency_code} = {converted_amount:.2f} USD",
+                text_color="green"
+            )
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to convert currency: {e}")
+            self.currency_result_label.configure(text=f"Failed to convert currency: {e}", text_color="red")
 
 
 if __name__ == "__main__":
     root = ctk.CTk()
-    app = CountryInfoApp(root)
+    app = CountryDashboardApp(root)
     root.mainloop()
