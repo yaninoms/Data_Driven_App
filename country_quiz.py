@@ -2,6 +2,8 @@ import tkinter as tk
 import customtkinter as ctk
 import requests
 import random
+from PIL import Image, ImageTk
+from io import BytesIO
 
 # Initialize customtkinter
 ctk.set_appearance_mode("System")
@@ -11,8 +13,8 @@ class QuizApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Country Quiz Game")
-        self.root.geometry("600x400")
-        
+        self.root.geometry("600x500")
+
         # Game State
         self.current_question = None
         self.score = 0
@@ -21,7 +23,7 @@ class QuizApp:
         self.question_type = None
         self.questions_remaining = 0
         self.region = None
-        
+
         # Pages
         self.main_menu()
 
@@ -38,9 +40,12 @@ class QuizApp:
         self.info_button = ctk.CTkButton(self.root, text="Information", command=self.show_info)
         self.info_button.pack(pady=10)
 
+        self.country_info_button = ctk.CTkButton(self.root, text="Country Info Viewer", command=self.country_info_viewer)
+        self.country_info_button.pack(pady=10)
+
     def show_info(self):
         self.clear_window()
-        
+
         info_text = (
             "Welcome to the Country Quiz Game!\n\n"
             "Choose from three exciting question types:\n"
@@ -59,6 +64,76 @@ class QuizApp:
 
         self.back_button = ctk.CTkButton(self.root, text="Back", command=self.main_menu)
         self.back_button.pack(pady=10)
+
+    def country_info_viewer(self):
+        self.clear_window()
+
+        self.header_label = ctk.CTkLabel(self.root, text="Country Info Viewer", font=("Arial", 20))
+        self.header_label.pack(pady=20)
+
+        self.search_entry = ctk.CTkEntry(self.root, placeholder_text="Enter country name", width=300)
+        self.search_entry.pack(pady=10)
+
+        self.search_button = ctk.CTkButton(self.root, text="Search", command=self.fetch_country_info)
+        self.search_button.pack(pady=10)
+
+        self.info_label = ctk.CTkLabel(self.root, text="", justify="left", wraplength=500)
+        self.info_label.pack(pady=20)
+
+        self.back_button = ctk.CTkButton(self.root, text="Back", command=self.main_menu)
+        self.back_button.pack(pady=10)
+
+    def fetch_country_info(self):
+        country_name = self.search_entry.get().strip()
+        if not country_name:
+            self.info_label.configure(text="Please enter a country name.", text_color="red")
+            return
+
+        try:
+            response = requests.get(f"https://restcountries.com/v3.1/name/{country_name}")
+            response.raise_for_status()
+            country = response.json()[0]
+
+            name = country.get('name', {}).get('common', 'Unknown')
+            flag = country.get('flags', {}).get('png', 'Unknown')
+            population = country.get('population', 'Unknown')
+            region = country.get('region', 'Unknown')
+            languages = ", ".join(country.get('languages', {}).values()) or 'Unknown'
+            currencies = ", ".join(country.get('currencies', {}).keys()) or 'Unknown'
+
+            info_text = (
+                f"Name: {name}\n"
+                f"Population: {population}\n"
+                f"Region: {region}\n"
+                f"Languages: {languages}\n"
+                f"Currencies: {currencies}\n"
+                f"Flag: \n"
+            )
+
+            self.info_label.configure(text=info_text)
+            self.display_flag(flag)
+
+        except Exception as e:
+            self.info_label.configure(text=f"Error fetching country information: {e}", text_color="red")
+
+    def display_flag(self, flag_url):
+        try:
+            response = requests.get(flag_url)
+            response.raise_for_status()
+            image_data = BytesIO(response.content)
+            img = Image.open(image_data).resize((150, 100))
+            flag_image = ImageTk.PhotoImage(img)
+
+            # Clear previous flag if any
+            if hasattr(self, 'flag_label'):
+                self.flag_label.destroy()
+
+            self.flag_label = tk.Label(self.root, image=flag_image)
+            self.flag_label.image = flag_image
+            self.flag_label.pack(pady=10)
+
+        except Exception as e:
+            self.info_label.configure(text=f"Error displaying flag: {e}", text_color="red")
 
     def choose_question_type(self):
         self.clear_window()
@@ -103,7 +178,7 @@ class QuizApp:
         continents = ["Africa", "Americas", "Asia", "Europe", "Oceania"]
         for continent in continents:
             ctk.CTkButton(
-                self.root, text=continent, 
+                self.root, text=continent,
                 command=lambda c=continent: self.start_game_with_region(c.lower())
             ).pack(pady=5)
 
@@ -162,98 +237,64 @@ class QuizApp:
         self.feedback_label = ctk.CTkLabel(self.root, text="", font=("Arial", 14))
         self.feedback_label.pack(pady=10)
 
-    def update_timer(self):
-        if self.time_left > 0 and self.questions_remaining > 0:
-            self.time_left -= 1
-            self.timer_label.configure(text=f"Time Left: {self.time_left}s")
-            self.root.after(1000, self.update_timer)
-        elif self.questions_remaining == 0:
-            self.end_game()
-        else:
-            self.feedback_label.configure(text="Time's up!", text_color="red")
-            self.end_game()
-
     def fetch_new_question(self):
-        try:
-            url = "https://restcountries.com/v3.1/all"
-            if self.region and self.region != "international":
-                url = f"https://restcountries.com/v3.1/region/{self.region}"
+        if self.questions_remaining <= 0:
+            self.end_game()
+            return
 
-            response = requests.get(url)
+        try:
+            response = requests.get("https://restcountries.com/v3.1/all")
             response.raise_for_status()
             countries = response.json()
+
+            # Randomly select a country
             country = random.choice(countries)
+            self.current_question = {
+                "name": country.get("name", {}).get("common", "Unknown"),
+                "flag": country.get("flags", {}).get("png", ""),
+                "capital": ", ".join(country.get("capital", [])) or "Unknown",
+                "currency": ", ".join(country.get("currencies", {}).keys()) or "Unknown",
+            }
 
-            if self.question_type == "capital":
-                self.current_question = {
-                    "question": f"What is the capital of {country['name']['common']}?",
-                    "answer": country.get("capital", ["Unknown"])[0]
-                }
-            elif self.question_type == "flag":
-                self.current_question = {
-                    "question": f"Which country does this flag belong to?",
-                    "answer": country['name']['common'],
-                    "flag": country['flags']['png']
-                }
+            # Display question based on the question type
+            if self.question_type == "flag":
+                self.question_label.configure(text="Which country has this flag?")
+                self.display_flag(self.current_question["flag"])
+            elif self.question_type == "capital":
+                self.question_label.configure(text=f"What is the country with the capital: {self.current_question['capital']}?")
             elif self.question_type == "currency":
-                currencies = list(country.get("currencies", {}).keys())
-                self.current_question = {
-                    "question": f"What is the currency of {country['name']['common']}?",
-                    "answer": currencies[0] if currencies else "Unknown"
-                }
-            
-            self.display_question()
+                self.question_label.configure(text=f"Which country's currency is: {self.current_question['currency']}?")
+
         except Exception as e:
-            self.question_label.configure(text=f"Error fetching question: {e}")
-
-    def display_question(self):
-        self.question_label.configure(text=self.current_question.get("question", ""))
-        self.answer_entry.delete(0, tk.END)
-
-        if hasattr(self, "flag_label") and self.flag_label.winfo_exists():
-            self.flag_label.destroy()
-
-        if "flag" in self.current_question:
-            from PIL import Image, ImageTk
-            from io import BytesIO
-            try:
-                response = requests.get(self.current_question["flag"])
-                response.raise_for_status()
-                image_data = BytesIO(response.content)
-                img = Image.open(image_data).resize((150, 100))
-                flag_image = ImageTk.PhotoImage(img)
-                self.flag_label = tk.Label(self.root, image=flag_image)
-                self.flag_label.image = flag_image
-                self.flag_label.pack()
-            except Exception as e:
-                self.question_label.configure(text=f"Error displaying flag: {e}")
+            self.feedback_label.configure(text=f"Error fetching question: {e}", text_color="red")
 
     def check_answer(self):
         user_answer = self.answer_entry.get().strip().lower()
-        correct_answer = self.current_question.get("answer", "").strip().lower()
-
-        if user_answer == correct_answer:
-            self.feedback_label.configure(text="Correct!", text_color="green")
+        if user_answer == self.current_question["name"].lower():
             self.score += 1
+            self.feedback_label.configure(text="Correct!", text_color="green")
         else:
-            self.feedback_label.configure(text=f"Wrong! The correct answer was {self.current_question.get('answer', 'Unknown')}.", text_color="red")
+            self.feedback_label.configure(text=f"Incorrect! The correct answer was {self.current_question['name']}.", text_color="red")
 
         self.questions_remaining -= 1
         self.score_label.configure(text=f"Score: {self.score}")
+        self.answer_entry.delete(0, tk.END)
 
-        if self.questions_remaining > 0:
-            self.fetch_new_question()
-        else:
+        self.fetch_new_question()
+
+    def update_timer(self):
+        if self.time_left <= 0:
             self.end_game()
+            return
+
+        self.time_left -= 1
+        self.timer_label.configure(text=f"Time Left: {self.time_left}s")
+        self.root.after(1000, self.update_timer)
 
     def end_game(self):
         self.clear_window()
-
-        self.header_label = ctk.CTkLabel(self.root, text="Game Over", font=("Arial", 20))
+        self.header_label = ctk.CTkLabel(self.root, text=f"Game Over! Your Score: {self.score}", font=("Arial", 20))
         self.header_label.pack(pady=20)
-
-        self.score_label = ctk.CTkLabel(self.root, text=f"Your Score: {self.score}", font=("Arial", 16))
-        self.score_label.pack(pady=10)
 
         self.play_again_button = ctk.CTkButton(self.root, text="Play Again", command=self.main_menu)
         self.play_again_button.pack(pady=10)
@@ -265,9 +306,8 @@ class QuizApp:
         for widget in self.root.winfo_children():
             widget.destroy()
 
-# Main Application
+
 if __name__ == "__main__":
     root = ctk.CTk()
     app = QuizApp(root)
     root.mainloop()
-
