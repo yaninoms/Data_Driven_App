@@ -4,10 +4,9 @@ import requests
 import random
 from PIL import Image, ImageTk
 from io import BytesIO
-
-# Initialize customtkinter
-ctk.set_appearance_mode("System")
-ctk.set_default_color_theme("blue")
+import folium
+import webview
+import os
 
 class QuizApp:
     def __init__(self, root):
@@ -117,11 +116,50 @@ class QuizApp:
         self.search_button = ctk.CTkButton(self.root, text="Search", command=self.fetch_country_info)
         self.search_button.pack(pady=10)
 
+        self.search_button = ctk.CTkButton(self.root, text="Open Map", command=self.open_map)
+        self.search_button.pack(pady=10)
+
         self.info_label = ctk.CTkLabel(self.root, text="", justify="left", wraplength=500)
-        self.info_label.pack(pady=20)
+        self.info_label.pack(pady=30)
 
         self.back_button = ctk.CTkButton(self.root, text="Back", command=self.main_menu)
         self.back_button.pack(pady=10)
+
+    def generate_map(self):
+        # Create a folium map
+        m = folium.Map(location=[20, 0], zoom_start=2)
+
+        # Fetch GeoJSON data
+        try:
+            response = requests.get("https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson")
+            response.raise_for_status()
+            countries_geojson = response.json()
+        except requests.RequestException as e:
+            print(f"Error fetching GeoJSON data: {e}")
+            return
+
+        # Add GeoJSON to the map
+        folium.GeoJson(
+            countries_geojson,
+            style_function=lambda x: {"fillColor": "blue", "color": "black", "weight": 1},
+            highlight_function=lambda x: {"weight": 3, "color": "green"},
+            tooltip=folium.GeoJsonTooltip(fields=["ADMIN"], aliases=["Country:"]),
+        ).add_to(m)
+
+        # Save the map as an HTML file
+        self.map_file = os.path.join(os.getcwd(), "map.html")
+        m.save(self.map_file)  # Corrected this line
+
+    def open_map(self):
+        # Generate the map before attempting to open it
+        self.generate_map()
+
+        # Open the map if it was successfully created
+        if hasattr(self, 'map_file') and os.path.exists(self.map_file):
+            webview.create_window("Interactive Map", f"file://{os.path.abspath(self.map_file)}")
+            webview.start()
+        else:
+            print("Error: Map file not found.")
 
     def fetch_country_info(self):
         country_name = self.search_entry.get().strip()
