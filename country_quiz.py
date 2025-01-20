@@ -13,7 +13,7 @@ class QuizApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Country Quiz Game")
-        self.root.geometry("600x500")
+        self.root.geometry("900x700")
 
         # Game State
         self.current_question = None
@@ -27,43 +27,83 @@ class QuizApp:
         # Pages
         self.main_menu()
 
+    def set_background_image(self, image_path):
+        # Load the background image
+        bg_image = Image.open(image_path)
+        bg_image = bg_image.resize((900, 700), Image.Resampling.LANCZOS)  # Resize to fit the window
+        self.bg_image_tk = ImageTk.PhotoImage(bg_image)
+
+        # Add the image to a CTkLabel
+        self.bg_label = ctk.CTkLabel(self.root, image=self.bg_image_tk, text="")
+        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)  # Stretch the image to fill the window
+
     def main_menu(self):
         self.clear_window()
+        
+        # Set your uploaded PNG as the background image
+        self.set_background_image('wonderpals.png')  
 
-        # Main Menu Components
-        self.header_label = ctk.CTkLabel(self.root, text="Country Quiz Game", font=("Arial", 20))
-        self.header_label.pack(pady=20)
+        # Button Configuration
+        button_width = 260
+        button_height = 70
 
-        self.play_button = ctk.CTkButton(self.root, text="Play Game", command=self.choose_question_type)
-        self.play_button.pack(pady=10)
+        play_game_image = Image.open("quiz-btn.png").resize((250, 80), Image.Resampling.LANCZOS)
+        self.play_game_image_tk = ImageTk.PhotoImage(play_game_image)
 
-        self.info_button = ctk.CTkButton(self.root, text="Information", command=self.show_info)
-        self.info_button.pack(pady=10)
+        info_image = Image.open("info-btn.png").resize((250, 80), Image.Resampling.LANCZOS)
+        self.info_image_tk = ImageTk.PhotoImage(info_image)
 
-        self.country_info_button = ctk.CTkButton(self.root, text="Country Info Viewer", command=self.country_info_viewer)
-        self.country_info_button.pack(pady=10)
+        viewer_image = Image.open("atlasbtn.png").resize((250, 80), Image.Resampling.LANCZOS)
+        self.viewer_image_tk = ImageTk.PhotoImage(viewer_image)
+
+        # Play Game Button
+        self.play_button = ctk.CTkButton(
+            self.root,
+            text="",
+            command=self.choose_question_type,
+            image=self.play_game_image_tk,
+            width=button_width,
+            height=button_height,
+            fg_color="transparent",
+            border_width=0,
+            hover_color="#47250d"
+        )
+        self.play_button.place(x=40, y=506)  # Adjust coordinates to fit the design
+
+        # Country Viewer Button
+        self.viewer_button = ctk.CTkButton(
+            self.root,
+            text="",
+            command=self.country_info_viewer,
+            image=self.viewer_image_tk,
+            width=button_width,
+            height=button_height,
+            fg_color="transparent",
+            border_width=0,
+            hover_color="#47250d"
+        )
+        self.viewer_button.place(x=318, y=506)  # Adjust coordinates to fit the design
+
+        #  Info Button
+        self.info_button = ctk.CTkButton(
+            self.root,
+            text="",
+            command=self.show_info,
+            image=self.info_image_tk,
+            width=button_width,
+            height=button_height,
+            fg_color="transparent",
+            border_width=0,
+            hover_color="#47250d"
+        )
+        self.info_button.place(x=595, y=506)  # Adjust coordinates to fit the design
 
     def show_info(self):
         self.clear_window()
+        self.set_background_image('info.png')
 
-        info_text = (
-            "Welcome to the Country Quiz Game!\n\n"
-            "Choose from three exciting question types:\n"
-            "1. Guess the Flag\n"
-            "2. Guess the Country by Capital\n"
-            "3. Guess the Currency\n\n"
-            "You can select a difficulty level that determines the time limit:\n"
-            "- Easy: 2 minutes\n"
-            "- Normal: 1 minute\n"
-            "- Advanced: 30 seconds\n\n"
-            "Try to answer 10 questions and achieve the highest score!"
-        )
-
-        self.info_label = ctk.CTkLabel(self.root, text=info_text, justify="left", wraplength=500)
-        self.info_label.pack(pady=20)
-
-        self.back_button = ctk.CTkButton(self.root, text="Back", command=self.main_menu)
-        self.back_button.pack(pady=10)
+        self.back_button = ctk.CTkButton(self.root, text="", command=self.main_menu, fg_color="transparent")
+        self.back_button.place(x=529, y=550)
 
     def country_info_viewer(self):
         self.clear_window()
