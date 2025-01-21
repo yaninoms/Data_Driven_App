@@ -13,6 +13,7 @@ class QuizApp:
         self.root = root
         self.root.title("Country Quiz Game")
         self.root.geometry("900x700")
+        self.root.resizable(False, False)
 
         # Game State
         self.current_question = None
@@ -63,7 +64,7 @@ class QuizApp:
             image=self.play_game_image_tk,
             width=button_width,
             height=button_height,
-            fg_color="transparent",
+            fg_color="#47250d",
             border_width=0,
             hover_color="#47250d"
         )
@@ -77,7 +78,7 @@ class QuizApp:
             image=self.viewer_image_tk,
             width=button_width,
             height=button_height,
-            fg_color="transparent",
+            fg_color="#47250d",
             border_width=0,
             hover_color="#47250d"
         )
@@ -91,7 +92,7 @@ class QuizApp:
             image=self.info_image_tk,
             width=button_width,
             height=button_height,
-            fg_color="transparent",
+            fg_color="#47250d",
             border_width=0,
             hover_color="#47250d"
         )
@@ -101,8 +102,22 @@ class QuizApp:
         self.clear_window()
         self.set_background_image('info.png')
 
-        self.back_button = ctk.CTkButton(self.root, text="", command=self.main_menu, fg_color="transparent")
-        self.back_button.place(x=529, y=550)
+        button_width = 187
+        button_height = 50
+
+        back_image = Image.open("go-back.png").resize((187, 50), Image.Resampling.LANCZOS)
+        self.back_image_tk = ImageTk.PhotoImage(back_image)
+
+        self.back_button = ctk.CTkButton(
+            self.root,
+            width=button_width, 
+            height=button_height, 
+            text="", command=self.main_menu, 
+            fg_color="#47250d",
+            image=self.back_image_tk,
+            hover_color="#47250d"
+            )
+        self.back_button.place(x=503, y=536)
 
     def country_info_viewer(self):
         self.clear_window()
@@ -119,7 +134,7 @@ class QuizApp:
         self.search_button = ctk.CTkButton(self.root, text="Open Map", command=self.open_map)
         self.search_button.pack(pady=10)
 
-        self.info_label = ctk.CTkLabel(self.root, text="", justify="left", wraplength=500)
+        self.info_label = ctk.CTkLabel(self.root, text="",height=70, width=400, justify="left")
         self.info_label.pack(pady=30)
 
         self.back_button = ctk.CTkButton(self.root, text="Back", command=self.main_menu)
@@ -215,21 +230,53 @@ class QuizApp:
 
     def choose_question_type(self):
         self.clear_window()
+        self.set_background_image('1-game type.png')
 
-        self.header_label = ctk.CTkLabel(self.root, text="Choose Question Type", font=("Arial", 20))
-        self.header_label.pack(pady=20)
+        button_height = 310
+        button_width = 214
 
-        self.flag_button = ctk.CTkButton(self.root, text="Guess the Flag", command=lambda: self.choose_region("flag"))
-        self.flag_button.pack(pady=10)
+        guessflag_image = Image.open("guessflag.png").resize((214, 310), Image.Resampling.LANCZOS)
+        self.guessflag_image_tk = ImageTk.PhotoImage(guessflag_image)
 
-        self.capital_button = ctk.CTkButton(self.root, text="Guess the Country by Capital", command=lambda: self.choose_region("capital"))
-        self.capital_button.pack(pady=10)
+        guesscap_image = Image.open("guesscap.png").resize((214,310), Image.Resampling.LANCZOS)
+        self.guesscap_image_tk = ImageTk.PhotoImage(guesscap_image)
 
-        self.currency_button = ctk.CTkButton(self.root, text="Guess the Currency", command=lambda: self.choose_region("currency"))
-        self.currency_button.pack(pady=10)
+        guesscur_image = Image.open("guesscur.png").resize((214,310), Image.Resampling.LANCZOS)
+        self.guesscur_image_tk = ImageTk.PhotoImage(guesscur_image)
+
+        self.flag_button = ctk.CTkButton(
+            self.root, text="", 
+            command=lambda: self.choose_region("flag"),
+            image= self.guessflag_image_tk,
+            height= button_height,
+            width=button_width,
+            fg_color="#ffca53",
+            hover_color="#f9a01b"
+            )
+        self.flag_button.place(x=50, y=178)
+
+        self.capital_button = ctk.CTkButton(self.root, text="", 
+            command=lambda: self.choose_region("capital"),
+            height= button_height,
+            width=button_width,
+            image= self.guesscap_image_tk,
+            fg_color="#ffca53",
+            hover_color="#f9a01b")
+        self.capital_button.place(x=336, y=178)
+
+        self.currency_button = ctk.CTkButton(
+            self.root, text="",
+            command=lambda: self.choose_region("currency"),
+            height= button_height,
+            width=button_width,
+            image= self.guesscur_image_tk,
+            fg_color="#ffca53",
+            hover_color="#f9a01b"
+            )
+        self.currency_button.place(x=620, y=178)
 
         self.back_button = ctk.CTkButton(self.root, text="Back", command=self.main_menu)
-        self.back_button.pack(pady=10)
+        self.back_button.place(x=728, y=594)
 
     def choose_region(self, question_type):
         self.question_type = question_type
